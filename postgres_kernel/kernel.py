@@ -2,15 +2,10 @@ from IPython.kernel.zmq.kernelbase import Kernel
 from pexpect import replwrap, EOF
 
 from subprocess import check_output
-from os import unlink
-
-import base64
-import imghdr
 import re
 import signal
-import urllib
 
-__version__ = '0.2'
+from .version import __version__
 
 version_pat = re.compile(r'version (\d+(\.\d+)+)')
 
@@ -19,8 +14,8 @@ from .images import (
 )
 
 
-class BashKernel(Kernel):
-    implementation = 'bash_kernel'
+class PostgresKernel(Kernel):
+    implementation = 'postgres_kernel'
     implementation_version = __version__
 
     @property
@@ -36,10 +31,10 @@ class BashKernel(Kernel):
             self._banner = check_output(['bash', '--version']).decode('utf-8')
         return self._banner
 
-    language_info = {'name': 'bash',
-                     'codemirror_mode': 'shell',
-                     'mimetype': 'text/x-sh',
-                     'file_extension': '.sh'}
+    language_info = {'name': 'PostgreSQL',
+                     'codemirror_mode': 'sql',
+                     'mimetype': 'text/x-postgresql',
+                     'file_extension': '.sql'}
 
     def __init__(self, **kwargs):
         Kernel.__init__(self, **kwargs)
@@ -138,7 +133,7 @@ class BashKernel(Kernel):
             cmd = 'compgen -cdfa %s' % token
             output = self.bashwrapper.run_command(cmd).rstrip()
             matches.extend(output.split())
-            
+
         if not matches:
             return default
         matches = [m for m in matches if m.startswith(token)]
@@ -146,5 +141,3 @@ class BashKernel(Kernel):
         return {'matches': sorted(matches), 'cursor_start': start,
                 'cursor_end': cursor_pos, 'metadata': dict(),
                 'status': 'ok'}
-
-
