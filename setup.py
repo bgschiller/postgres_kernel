@@ -6,7 +6,7 @@ import os
 import sys
 
 kernel_json = {
-    "argv": [sys.executable, "-m", "sql_kernel", "-f", "{connection_file}"],
+    "argv": [sys.executable, "-m", "postgres_kernel", "-f", "{connection_file}"],
     "display_name": "PostgreSQL",
     "language": "postgresql",
     "codemirror_mode": "sql"

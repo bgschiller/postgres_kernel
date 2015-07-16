@@ -1,22 +1,51 @@
 from IPython.kernel.zmq.kernelbase import Kernel
-from pexpect import replwrap, EOF
+import psycopg2
+from psycopg2 import ProgrammingError
+from psycopg2.extensions import (
+    QueryCanceledError, POLL_OK, POLL_READ, POLL_WRITE)
 
-from subprocess import check_output
 import re
-import signal
+from select import select
 
 from .version import __version__
 
-version_pat = re.compile(r'version (\d+(\.\d+)+)')
+version_pat = re.compile(r'^PostgreSQL (\d+(\.\d+)+)')
 
-from .images import (
-    extract_image_filenames, display_data_for_image, image_setup_cmd
-)
+
+def wait_select_inter(conn):
+    while 1:
+        try:
+            state = conn.poll()
+            if state == POLL_OK:
+                break
+            elif state == POLL_READ:
+                select([conn.fileno()], [], [])
+            elif state == POLL_WRITE:
+                select([], [conn.fileno()], [])
+            else:
+                raise conn.OperationalError(
+                    "bad state from poll: %s" % state)
+        except KeyboardInterrupt:
+            conn.cancel()
+            # the loop will be broken by a server error
+            continue
 
 
 class PostgresKernel(Kernel):
     implementation = 'postgres_kernel'
     implementation_version = __version__
+
+    language_info = {'name': 'PostgreSQL',
+                     'codemirror_mode': 'sql',
+                     'mimetype': 'text/x-postgresql',
+                     'file_extension': '.sql'}
+
+    def __init__(self, **kwargs):
+        Kernel.__init__(self, **kwargs)
+
+        # Catch KeyboardInterrupt, cancel query, raise QueryCancelledError
+        psycopg2.extensions.set_wait_callback(wait_select_inter)
+        self._start_connection()
 
     @property
     def language_version(self):
@@ -28,31 +57,21 @@ class PostgresKernel(Kernel):
     @property
     def banner(self):
         if self._banner is None:
-            self._banner = check_output(['bash', '--version']).decode('utf-8')
+            self._banner = self.fetchone('SELECT VERSION()')[0]
         return self._banner
 
-    language_info = {'name': 'PostgreSQL',
-                     'codemirror_mode': 'sql',
-                     'mimetype': 'text/x-postgresql',
-                     'file_extension': '.sql'}
+    def _start_connection(self):
+        self._conn = psycopg2.connect('')  # TODO figure out a way to pass this...
 
-    def __init__(self, **kwargs):
-        Kernel.__init__(self, **kwargs)
-        self._start_bash()
+    def fetchone(self, query):
+        with self._conn.cursor() as c:
+            c.execute(query)
+            return c.fetchone()
 
-    def _start_bash(self):
-        # Signal handlers are inherited by forked processes, and we can't easily
-        # reset it from the subprocess. Since kernelapp ignores SIGINT except in
-        # message handlers, we need to temporarily reset the SIGINT handler here
-        # so that bash and its children are interruptible.
-        sig = signal.signal(signal.SIGINT, signal.SIG_DFL)
-        try:
-            self.bashwrapper = replwrap.bash()
-        finally:
-            signal.signal(signal.SIGINT, sig)
-
-        # Register Bash function to write image data to temporary file
-        self.bashwrapper.run_command(image_setup_cmd)
+    def fetchall(self, query):
+        with self._conn.cursor() as c:
+            c.execute(query)
+            return c.fetchall()
 
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
@@ -60,84 +79,19 @@ class PostgresKernel(Kernel):
             return {'status': 'ok', 'execution_count': self.execution_count,
                     'payload': [], 'user_expressions': {}}
 
-        interrupted = False
         try:
-            output = self.bashwrapper.run_command(code.rstrip(), timeout=None)
-        except KeyboardInterrupt:
-            self.bashwrapper.child.sendintr()
-            interrupted = True
-            self.bashwrapper._expect_prompt()
-            output = self.bashwrapper.child.before
-        except EOF:
-            output = self.bashwrapper.child.before + 'Restarting Bash'
-            self._start_bash()
-
-        if not silent:
-            image_filenames, output = extract_image_filenames(output)
-
-            # Send standard output
-            stream_content = {'name': 'stdout', 'text': output}
-            self.send_response(self.iopub_socket, 'stream', stream_content)
-
-            # Send images, if any
-            for filename in image_filenames:
-                try:
-                    data = display_data_for_image(filename)
-                except ValueError as e:
-                    message = {'name': 'stdout', 'text': str(e)}
-                    self.send_response(self.iopub_socket, 'stream', message)
-                else:
-                    self.send_response(self.iopub_socket, 'display_data', data)
-
-        if interrupted:
+            output = self.fetchall(code)
+        except QueryCanceledError:
+            self._conn.rollback()
             return {'status': 'abort', 'execution_count': self.execution_count}
-
-        try:
-            exitcode = int(self.bashwrapper.run_command('echo $?').rstrip())
-        except Exception:
-            exitcode = 1
-
-        if exitcode:
+        except ProgrammingError as e:
+            self._conn.rollback()
             return {'status': 'error', 'execution_count': self.execution_count,
-                    'ename': '', 'evalue': str(exitcode), 'traceback': []}
-        else:
-            return {'status': 'ok', 'execution_count': self.execution_count,
-                    'payload': [], 'user_expressions': {}}
+                    'ename': 'ProgrammingError', 'evalue': str(e),
+                    'traceback': []}
+        # Send standard output
+        stream_content = {'name': 'stdout', 'text': output}
+        self.send_response(self.iopub_socket, 'stream', stream_content)
 
-    def do_complete(self, code, cursor_pos):
-        code = code[:cursor_pos]
-        default = {'matches': [], 'cursor_start': 0,
-                   'cursor_end': cursor_pos, 'metadata': dict(),
-                   'status': 'ok'}
-
-        if not code or code[-1] == ' ':
-            return default
-
-        tokens = code.replace(';', ' ').split()
-        if not tokens:
-            return default
-
-        matches = []
-        token = tokens[-1]
-        start = cursor_pos - len(token)
-
-        if token[0] == '$':
-            # complete variables
-            cmd = 'compgen -A arrayvar -A export -A variable %s' % token[1:] # strip leading $
-            output = self.bashwrapper.run_command(cmd).rstrip()
-            completions = set(output.split())
-            # append matches including leading $
-            matches.extend(['$'+c for c in completions])
-        else:
-            # complete functions and builtins
-            cmd = 'compgen -cdfa %s' % token
-            output = self.bashwrapper.run_command(cmd).rstrip()
-            matches.extend(output.split())
-
-        if not matches:
-            return default
-        matches = [m for m in matches if m.startswith(token)]
-
-        return {'matches': sorted(matches), 'cursor_start': start,
-                'cursor_end': cursor_pos, 'metadata': dict(),
-                'status': 'ok'}
+        return {'status': 'ok', 'execution_count': self.execution_count,
+                'payload': [], 'user_expressions': {}}
