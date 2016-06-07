@@ -80,9 +80,11 @@ class PostgresKernel(Kernel):
         log('fetching all from: \n' + query)
         with self._conn.cursor() as c:
             c.execute(query)
-            keys = [col[0] for col in c.description]
-            return keys, c.fetchall()
-
+            desc = c.description
+            if c.description:
+                keys = [col[0] for col in c.description]
+                return keys, c.fetchall()
+            return None, None
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
         if not code.strip():
@@ -102,7 +104,8 @@ class PostgresKernel(Kernel):
                     'ename': 'ProgrammingError', 'evalue': str(e),
                     'traceback': []}
         else:
-            self.send_response(self.iopub_socket, 'display_data', display_data(header, rows))
+            if header is not None:
+                self.send_response(self.iopub_socket, 'display_data', display_data(header, rows))
 
         return {'status': 'ok', 'execution_count': self.execution_count,
                 'payload': [], 'user_expressions': {}}
