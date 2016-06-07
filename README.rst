@@ -23,13 +23,15 @@ This is heavily based on `takluyver/bash_kernel
 Todo
 ----
 
-- Figure out how to point at other databases, not just default settings for `psycopg2.connect`
+- Figure out how to point at other databases, not just default settings for ``psycopg2.connect``
 - Get rid of this ShimWarning, "You should import from ipykernel or jupyter_client instead."
 - How do I make this pip-installable?
 
 Related
 -------
 
-- Catherine Devlin has an ipython magic that seems very full featured: `catherinedevlin/ipython-sql<https://github.com/catherinedevlin/ipython-sql>`_
+- Catherine Devlin has an ipython magic that seems very full featured: `catherinedevlin/ipython-sql
+<https://github.com/catherinedevlin/ipython-sql>`_
+
 - As noted, this is based on `takluyver/bash_kernel
 <https://github.com/takluyver/bash_kernel>`_
