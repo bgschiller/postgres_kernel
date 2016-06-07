@@ -30,8 +30,6 @@ Todo
 Related
 -------
 
-- Catherine Devlin has an ipython magic that seems very full featured: `catherinedevlin/ipython-sql
-<https://github.com/catherinedevlin/ipython-sql>`_
+- Catherine Devlin has an ipython magic that seems very full featured: `catherinedevlin/ipython-sql <https://github.com/catherinedevlin/ipython-sql>`_
 
-- As noted, this is based on `takluyver/bash_kernel
-<https://github.com/takluyver/bash_kernel>`_
+- As noted, this is based on `takluyver/bash_kernel <https://github.com/takluyver/bash_kernel>`_
