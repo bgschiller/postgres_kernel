@@ -47,7 +47,7 @@ setup(name='postgres_kernel',
       url='https://github.com/bgschiller/postgres_kernel',
       packages=['postgres_kernel'],
       cmdclass={'install': install_with_kernelspec},
-      install_requires=['psycopg2>=2.6'],
+      install_requires=['psycopg2>=2.6', 'tabulate==0.7.5'],
       classifiers=[
           'Framework :: IPython',
           'License :: OSI Approved :: BSD License',
