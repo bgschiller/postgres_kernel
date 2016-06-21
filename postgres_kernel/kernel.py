@@ -1,6 +1,6 @@
 from ipykernel.kernelbase import Kernel
 import psycopg2
-from psycopg2 import ProgrammingError
+from psycopg2 import ProgrammingError, OperationalError
 from psycopg2.extensions import (
     QueryCanceledError, POLL_OK, POLL_READ, POLL_WRITE)
 
@@ -51,6 +51,8 @@ class PostgresKernel(Kernel):
         log('inside init')
         # Catch KeyboardInterrupt, cancel query, raise QueryCancelledError
         psycopg2.extensions.set_wait_callback(wait_select_inter)
+        self._conn_string = ''
+        self._conn = None
         self._start_connection()
 
     @property
@@ -63,12 +65,20 @@ class PostgresKernel(Kernel):
     @property
     def banner(self):
         if self._banner is None:
+            if self._conn is None:
+                return 'not yet connected to a database'
             self._banner = self.fetchone('SELECT VERSION();')[0]
         return self._banner
 
     def _start_connection(self):
         log('starting connection')
-        self._conn = psycopg2.connect('')  # TODO figure out a way to pass this...
+        try:
+            self._conn = psycopg2.connect(self._conn_string)
+        except OperationalError:
+            log('failed to connect to {}'.format(self._conn_string))
+            message = '''Failed to connect to a database at {}'''.format(self._conn_string)
+            self.send_response(self.iopub_socket, 'stream',
+                               {'name': 'stderr', 'text': message})
 
     def fetchone(self, query):
         log('fetching one from: \n' + query)
@@ -85,8 +95,20 @@ class PostgresKernel(Kernel):
                 keys = [col[0] for col in c.description]
                 return keys, c.fetchall()
             return None, None
+
+    CONN_STRING_COMMENT = re.compile(r'--\s?connection:\s?(.*)$')
+
+    def change_connection(self, conn_string):
+        self._conn_string = conn_string
+        self._start_connection()
+
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
+
+        connection_string = self.CONN_STRING_COMMENT.findall(code)
+        if connection_string:
+            self.change_connection(connection_string[0])
+        code = self.CONN_STRING_COMMENT.sub('', code)
         if not code.strip():
             return {'status': 'ok', 'execution_count': self.execution_count,
                     'payload': [], 'user_expressions': {}}
