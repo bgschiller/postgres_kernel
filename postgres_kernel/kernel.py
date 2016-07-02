@@ -5,6 +5,7 @@ from psycopg2.extensions import (
     QueryCanceledError, POLL_OK, POLL_READ, POLL_WRITE)
 
 import re
+import os
 from select import select
 
 from .version import __version__
@@ -51,7 +52,7 @@ class PostgresKernel(Kernel):
         log('inside init')
         # Catch KeyboardInterrupt, cancel query, raise QueryCancelledError
         psycopg2.extensions.set_wait_callback(wait_select_inter)
-        self._conn_string = ''
+        self._conn_string = os.getenv('DATABASE_URL', '')
         self._conn = None
         self._start_connection()
 
