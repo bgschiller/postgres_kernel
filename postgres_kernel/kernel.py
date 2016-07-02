@@ -113,6 +113,17 @@ class PostgresKernel(Kernel):
             return {'status': 'ok', 'execution_count': self.execution_count,
                     'payload': [], 'user_expressions': {}}
 
+        if self._conn is None:
+            self.send_response(
+                self.iopub_socket, 'stream', {
+                    'name': 'stderr',
+                    'text': '''\
+Error: Unable to connect to a database at "{}".
+  Perhaps you need to set a connection string with
+  -- connection: <connection string here>'''.format(self._conn_string)
+                })
+            return {'status': 'error', 'execution_count': self.execution_count,
+                    'ename': 'MissingConnection'}
         try:
             header, rows = self.fetchall(code)
         except QueryCanceledError:
