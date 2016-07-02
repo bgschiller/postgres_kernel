@@ -1,8 +1,8 @@
 A simple Jupyter kernel for PostgreSQL
 
-This requires IPython 3.
+I don't know how to set this up to be pip-installable, but maybe you can help with that?
 
-To use it, install with ``pip install postgres_kernel``, and then run one of:
+To use, run one of:
 
 .. code:: shell
 
@@ -23,7 +23,6 @@ This is heavily based on `takluyver/bash_kernel
 Todo
 ----
 
-- Figure out how to point at other databases, not just default settings for ``psycopg2.connect``
 - Get rid of this ShimWarning, "You should import from ipykernel or jupyter_client instead."
 - How do I make this pip-installable?
 
