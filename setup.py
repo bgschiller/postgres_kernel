@@ -19,8 +19,9 @@ class install_with_kernelspec(install):
         install.run(self)
 
         # Now write the kernelspec
-        from IPython.kernel.kernelspec import install_kernel_spec
+        from jupyter_client.kernelspec import KernelSpecManager
         from IPython.utils.tempdir import TemporaryDirectory
+        kernel_spec = KernelSpecManager()
         with TemporaryDirectory() as td:
             os.chmod(td, 0o755)  # Starts off as 700, not user readable
             with open(os.path.join(td, 'kernel.json'), 'w') as f:
@@ -28,7 +29,7 @@ class install_with_kernelspec(install):
             # TODO: Copy resources once they're specified
 
             log.info('Installing IPython kernel spec')
-            install_kernel_spec(td, 'postgres', user=True, replace=True)
+            kernel_spec.install_kernel_spec(td, 'postgres', user=self.user, replace=True)
 
 with open('README.rst') as f:
     readme = f.read()
