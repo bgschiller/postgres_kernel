@@ -1,0 +1,11 @@
+MANIFEST.in
+README.rst
+postgres_kernel/__init__.py
+postgres_kernel/__main__.py
+postgres_kernel/kernel.py
+postgres_kernel/version.py
+postgres_kernel.egg-info/PKG-INFO
+postgres_kernel.egg-info/SOURCES.txt
+postgres_kernel.egg-info/dependency_links.txt
+postgres_kernel.egg-info/requires.txt
+postgres_kernel.egg-info/top_level.txt
