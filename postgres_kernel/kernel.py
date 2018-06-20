@@ -98,17 +98,30 @@ class PostgresKernel(Kernel):
             return None, None
 
     CONN_STRING_COMMENT = re.compile(r'--\s?connection:\s?(.*)$')
+    AUTOCOMMIT_SWITCH = re.compile(r'--aut')
 
     def change_connection(self, conn_string):
         self._conn_string = conn_string
         self._start_connection()
 
+    def switch_autocommit(self, switch_to):
+        if not self._conn:
+            self._start_connection()
+        self._conn.commit()
+        self._conn.autocommit = switch_to
+
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
+        print(code)
 
         connection_string = self.CONN_STRING_COMMENT.findall(code)
+        autocommit_switch = self.AUTOCOMMIT_SWITCH.findall(code)
+        print('switch got val!!')
+        print(autocommit_switch)
         if connection_string:
             self.change_connection(connection_string[0])
+        elif autocommit_switch:
+            self.switch_autocommit(not self._conn.autocommit)
         code = self.CONN_STRING_COMMENT.sub('', code)
         if not code.strip():
             return {'status': 'ok', 'execution_count': self.execution_count,

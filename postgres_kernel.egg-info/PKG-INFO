@@ -6,7 +6,6 @@ Home-page: https://github.com/bgschiller/postgres_kernel
 Author: Brian Schiller
 Author-email: bgschiller@gmail.com
 License: UNKNOWN
-Description-Content-Type: UNKNOWN
 Description: A simple Jupyter kernel for PostgreSQL
         
         I don't know how to set this up to be pip-installable, but maybe you can help with that?
