@@ -98,7 +98,7 @@ class PostgresKernel(Kernel):
             return None, None
 
     CONN_STRING_COMMENT = re.compile(r'--\s?connection:\s?(.*)$')
-    AUTOCOMMIT_SWITCH = re.compile(r'--aut')
+    AUTOCOMMIT_SWITCH = re.compile(r'--autocommit:(.*)$')
 
     def change_connection(self, conn_string):
         self._conn_string = conn_string
@@ -110,18 +110,48 @@ class PostgresKernel(Kernel):
         self._conn.commit()
         self._conn.autocommit = switch_to
 
+    def handle_autocoomit_switch(self, switch):
+        """
+        Strip and make a string case insensitive and ensure it is either 'true' or 'false'.
+
+        If neither, prompt user for either value.
+        When 'true', return True, and when 'false' return False.
+        """
+        parsed_switch = switch.strip().lower()
+        if not parsed_switch in ['true', 'false']:
+            self.send_response(
+                self.iopub_socket, 'stream', {
+                    'name': 'stderr',
+                    'text': 'autocommit must be true or false.\n\n'
+                    }
+                )
+            return {'status': 'error', 'execution_count': self.execution_count}
+
+        switch_bool = (parsed_switch == 'true')
+        self.switch_autocommit(switch_bool)
+        self.send_response(
+            self.iopub_socket, 'stream', {
+                'name': 'stdout',
+                'text': (
+                    f'commited current transaction & switched autocommit mode to '
+                    f'{str(self._conn.autocommit)}'
+                    )
+                }
+            )
+        return {'status': 'ok', 'execution_count': self.execution_count, 'payload': []}
+
+
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
         print(code)
 
         connection_string = self.CONN_STRING_COMMENT.findall(code)
         autocommit_switch = self.AUTOCOMMIT_SWITCH.findall(code)
-        print('switch got val!!')
-        print(autocommit_switch)
+        if autocommit_switch:
+            return self.handle_autocoomit_switch(autocommit_switch[0])
         if connection_string:
             self.change_connection(connection_string[0])
-        elif autocommit_switch:
-            self.switch_autocommit(not self._conn.autocommit)
+
         code = self.CONN_STRING_COMMENT.sub('', code)
         if not code.strip():
             return {'status': 'ok', 'execution_count': self.execution_count,
