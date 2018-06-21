@@ -133,8 +133,8 @@ class PostgresKernel(Kernel):
             self.iopub_socket, 'stream', {
                 'name': 'stdout',
                 'text': (
-                    f'commited current transaction & switched autocommit mode to '
-                    f'{str(self._conn.autocommit)}'
+                    'commited current transaction & switched autocommit mode to ' +
+                    str(self._conn.autocommit)
                     )
                 }
             )
