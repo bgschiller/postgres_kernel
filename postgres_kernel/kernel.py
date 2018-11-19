@@ -181,16 +181,24 @@ Error: Unable to connect to a database at "{}".
                     'ename': 'ProgrammingError', 'evalue': str(e),
                     'traceback': []}
         else:
-            if header is not None:
+            # Modified by mhoangvslev
+            self.send_response(
+                    self.iopub_socket, 'stream', {
+                        'name': 'stdout',
+                        'text': str(len(rows)) + " row(s) returned."
+                        })
+            if header is not None and len(rows) > 0:
                 self.send_response(self.iopub_socket, 'display_data', display_data(header, rows))
 
         return {'status': 'ok', 'execution_count': self.execution_count,
                 'payload': [], 'user_expressions': {}}
 
+# Modified by mhoangvslev
 def display_data(header, rows):
+    # https://bitbucket.org/astanin/python-tabulate
     d = {
         'data': {
-            'text/plain': tabulate(rows, header, tablefmt='simple'),
+            'text/latex': tabulate(rows, header, tablefmt='latex_booktabs'),
             'text/html': tabulate(rows, header, tablefmt='html'),
         },
         'metadata': {}
