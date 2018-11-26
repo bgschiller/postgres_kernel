@@ -123,8 +123,8 @@ class PostgresKernel(Kernel):
                 self.iopub_socket, 'stream', {
                     'name': 'stderr',
                     'text': 'autocommit must be true or false.\n\n'
-                    }
-                )
+                }
+            )
             return {'status': 'error', 'execution_count': self.execution_count}
 
         switch_bool = (parsed_switch == 'true')
@@ -135,11 +135,10 @@ class PostgresKernel(Kernel):
                 'text': (
                     'commited current transaction & switched autocommit mode to ' +
                     str(self._conn.autocommit)
-                    )
-                }
-            )
+                )
+            }
+        )
         return {'status': 'ok', 'execution_count': self.execution_count, 'payload': []}
-
 
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
@@ -181,21 +180,19 @@ Error: Unable to connect to a database at "{}".
                     'ename': 'ProgrammingError', 'evalue': str(e),
                     'traceback': []}
         else:
-            # Modified by mhoangvslev
             self.send_response(
-                    self.iopub_socket, 'stream', {
-                        'name': 'stdout',
-                        'text': str(len(rows)) + " row(s) returned."
-                        })
+                self.iopub_socket, 'stream', {
+                    'name': 'stdout',
+                    'text': str(len(rows)) + " row(s) returned."
+                })
             if header is not None and len(rows) > 0:
                 self.send_response(self.iopub_socket, 'display_data', display_data(header, rows))
 
         return {'status': 'ok', 'execution_count': self.execution_count,
                 'payload': [], 'user_expressions': {}}
 
-# Modified by mhoangvslev
+
 def display_data(header, rows):
-    # https://bitbucket.org/astanin/python-tabulate
     d = {
         'data': {
             'text/latex': tabulate(rows, header, tablefmt='latex_booktabs'),
