@@ -196,6 +196,7 @@ def display_data(header, rows):
     d = {
         'data': {
             'text/latex': tabulate(rows, header, tablefmt='latex_booktabs'),
+            'text/plain': tabulate(rows, header, tablefmt='simple'),
             'text/html': tabulate(rows, header, tablefmt='html'),
         },
         'metadata': {}
