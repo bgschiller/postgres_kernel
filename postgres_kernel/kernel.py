@@ -1,6 +1,6 @@
 from ipykernel.kernelbase import Kernel
 import psycopg2
-from psycopg2 import ProgrammingError, OperationalError
+from psycopg2 import Error, ProgrammingError, OperationalError
 from psycopg2.extensions import (
     QueryCanceledError, POLL_OK, POLL_READ, POLL_WRITE)
 
@@ -123,8 +123,8 @@ class PostgresKernel(Kernel):
                 self.iopub_socket, 'stream', {
                     'name': 'stderr',
                     'text': 'autocommit must be true or false.\n\n'
-                    }
-                )
+                }
+            )
             return {'status': 'error', 'execution_count': self.execution_count}
 
         switch_bool = (parsed_switch == 'true')
@@ -135,11 +135,10 @@ class PostgresKernel(Kernel):
                 'text': (
                     'commited current transaction & switched autocommit mode to ' +
                     str(self._conn.autocommit)
-                    )
-                }
-            )
+                )
+            }
+        )
         return {'status': 'ok', 'execution_count': self.execution_count, 'payload': []}
-
 
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
@@ -173,23 +172,39 @@ Error: Unable to connect to a database at "{}".
         except QueryCanceledError:
             self._conn.rollback()
             return {'status': 'abort', 'execution_count': self.execution_count}
-        except ProgrammingError as e:
+        except Error as e:
             self.send_response(self.iopub_socket, 'stream',
-                               {'name': 'stderr', 'text': str(e)})
+                               {'name': 'stderr', 'text': str(e)})                              
             self._conn.rollback()
             return {'status': 'error', 'execution_count': self.execution_count,
                     'ename': 'ProgrammingError', 'evalue': str(e),
                     'traceback': []}
         else:
-            if header is not None:
+            self.send_response(
+                self.iopub_socket, 'stream', {
+                    'name': 'stdout',
+                    'text': str(len(rows)) + " row(s) returned.\n"
+                })
+
+            for notice in self._conn.notices:
+                self.send_response(
+                    self.iopub_socket, 'stream', {
+                        'name': 'stdout',
+                        'text': str(notice)
+                })
+            self._conn.notices = []
+
+            if header is not None and len(rows) > 0:
                 self.send_response(self.iopub_socket, 'display_data', display_data(header, rows))
 
         return {'status': 'ok', 'execution_count': self.execution_count,
                 'payload': [], 'user_expressions': {}}
 
+
 def display_data(header, rows):
     d = {
         'data': {
+            'text/latex': tabulate(rows, header, tablefmt='latex_booktabs'),
             'text/plain': tabulate(rows, header, tablefmt='simple'),
             'text/html': tabulate(rows, header, tablefmt='html'),
         },
