@@ -2,7 +2,8 @@ from ipykernel.kernelbase import Kernel
 import psycopg2
 from psycopg2 import Error, ProgrammingError, OperationalError
 from psycopg2.extensions import (
-    QueryCanceledError, POLL_OK, POLL_READ, POLL_WRITE)
+    QueryCanceledError, POLL_OK, POLL_READ, POLL_WRITE, STATUS_BEGIN,
+)
 
 import re
 import os
@@ -14,6 +15,7 @@ version_pat = re.compile(r'^PostgreSQL (\d+(\.\d+)+)')
 
 
 def log(val):
+    return # comment out line for debug
     with open('kernel.log', 'a') as f:
         f.write(str(val) + '\n')
     return val
@@ -108,11 +110,15 @@ class PostgresKernel(Kernel):
 
     def switch_autocommit(self, switch_to):
         self._autocommit = switch_to
+        committed = False
         if self._conn:
-            self._conn.commit()
+            if self._conn.get_transaction_status() == STATUS_BEGIN:
+                committed = True
+                self._conn.commit()
             self._conn.autocommit = switch_to
         else:
             self._start_connection()
+        return committed
 
     def change_autocommit_mode(self, switch):
         """
@@ -131,14 +137,16 @@ class PostgresKernel(Kernel):
             )
 
         switch_bool = (parsed_switch == 'true')
-        self.switch_autocommit(switch_bool)
+        committed = self.switch_autocommit(switch_bool)
+        message = (
+            'committed current transaction & ' if committed else '' +
+            'switched autocommit mode to ' +
+            str(self._autocommit)
+        )
         self.send_response(
             self.iopub_socket, 'stream', {
                 'name': 'stderr',
-                'text': (
-                    'committed current transaction & switched autocommit mode to ' +
-                    str(self._conn.autocommit)
-                )
+                'text': message,
             }
         )
 
@@ -182,11 +190,12 @@ Error: Unable to connect to a database at "{}".
                     'ename': 'ProgrammingError', 'evalue': str(e),
                     'traceback': []}
         else:
-            self.send_response(
-                self.iopub_socket, 'stream', {
-                    'name': 'stdout',
-                    'text': str(len(rows)) + " row(s) returned.\n"
-                })
+            if rows is not None:
+                self.send_response(
+                    self.iopub_socket, 'stream', {
+                        'name': 'stdout',
+                        'text': str(len(rows)) + " row(s) returned.\n"
+                    })
 
             for notice in self._conn.notices:
                 self.send_response(
