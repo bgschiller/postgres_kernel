@@ -89,7 +89,9 @@ class PostgresKernel(Kernel):
         log('fetching one from: \n' + query)
         with self._conn.cursor() as c:
             c.execute(query)
-            return log(c.fetchone())
+            one = c.fetchone()
+            log(one)
+            return one
 
     def fetchall(self, query):
         log('fetching all from: \n' + query)
