@@ -29,7 +29,7 @@ class install_with_kernelspec(install):
 
             kernel_spec.install_kernel_spec(td, 'postgres', user=self.user)
 
-with open('README.rst') as f:
+with open('README.md') as f:
     readme = f.read()
 
 svem_flag = '--single-version-externally-managed'
@@ -38,7 +38,7 @@ if svem_flag in sys.argv:
     sys.argv.remove(svem_flag)
 
 setup(name='postgres_kernel',
-      version='0.2',
+      version='0.2.1',
       description='A PostgreSQL kernel for IPython',
       long_description=readme,
       author='Brian Schiller',

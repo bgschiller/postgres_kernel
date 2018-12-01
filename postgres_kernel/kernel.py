@@ -53,6 +53,7 @@ class PostgresKernel(Kernel):
         # Catch KeyboardInterrupt, cancel query, raise QueryCancelledError
         psycopg2.extensions.set_wait_callback(wait_select_inter)
         self._conn_string = os.getenv('DATABASE_URL', '')
+        self._autocommit = True
         self._conn = None
         self._start_connection()
 
@@ -75,6 +76,7 @@ class PostgresKernel(Kernel):
         log('starting connection')
         try:
             self._conn = psycopg2.connect(self._conn_string)
+            self._conn.autocommit = self._autocommit
         except OperationalError:
             log('failed to connect to {}'.format(self._conn_string))
             message = '''Failed to connect to a database at {}'''.format(self._conn_string)
@@ -97,20 +99,22 @@ class PostgresKernel(Kernel):
                 return keys, c.fetchall()
             return None, None
 
-    CONN_STRING_COMMENT = re.compile(r'--\s?connection:\s?(.*)$')
-    AUTOCOMMIT_SWITCH = re.compile(r'--autocommit:(.*)$')
+    CONN_STRING_COMMENT = re.compile(r'--\s*connection:\s*(.*)\s*$')
+    AUTOCOMMIT_SWITCH_COMMENT = re.compile(r'--\s*autocommit:\s*(\w+)\s*$')
 
     def change_connection(self, conn_string):
         self._conn_string = conn_string
         self._start_connection()
 
     def switch_autocommit(self, switch_to):
-        if not self._conn:
+        self._autocommit = switch_to
+        if self._conn:
+            self._conn.commit()
+            self._conn.autocommit = switch_to
+        else:
             self._start_connection()
-        self._conn.commit()
-        self._conn.autocommit = switch_to
 
-    def handle_autocoomit_switch(self, switch):
+    def change_autocommit_mode(self, switch):
         """
         Strip and make a string case insensitive and ensure it is either 'true' or 'false'.
 
@@ -125,33 +129,31 @@ class PostgresKernel(Kernel):
                     'text': 'autocommit must be true or false.\n\n'
                 }
             )
-            return {'status': 'error', 'execution_count': self.execution_count}
 
         switch_bool = (parsed_switch == 'true')
         self.switch_autocommit(switch_bool)
         self.send_response(
             self.iopub_socket, 'stream', {
-                'name': 'stdout',
+                'name': 'stderr',
                 'text': (
-                    'commited current transaction & switched autocommit mode to ' +
+                    'committed current transaction & switched autocommit mode to ' +
                     str(self._conn.autocommit)
                 )
             }
         )
-        return {'status': 'ok', 'execution_count': self.execution_count, 'payload': []}
 
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
         print(code)
 
         connection_string = self.CONN_STRING_COMMENT.findall(code)
-        autocommit_switch = self.AUTOCOMMIT_SWITCH.findall(code)
+        autocommit_switch = self.AUTOCOMMIT_SWITCH_COMMENT.findall(code)
         if autocommit_switch:
-            return self.handle_autocoomit_switch(autocommit_switch[0])
+            self.change_autocommit_mode(autocommit_switch[0])
         if connection_string:
             self.change_connection(connection_string[0])
 
-        code = self.CONN_STRING_COMMENT.sub('', code)
+        code = self.AUTOCOMMIT_SWITCH_COMMENT.sub('', self.CONN_STRING_COMMENT.sub('', code))
         if not code.strip():
             return {'status': 'ok', 'execution_count': self.execution_count,
                     'payload': [], 'user_expressions': {}}
@@ -174,7 +176,7 @@ Error: Unable to connect to a database at "{}".
             return {'status': 'abort', 'execution_count': self.execution_count}
         except Error as e:
             self.send_response(self.iopub_socket, 'stream',
-                               {'name': 'stderr', 'text': str(e)})                              
+                               {'name': 'stderr', 'text': str(e)})
             self._conn.rollback()
             return {'status': 'error', 'execution_count': self.execution_count,
                     'ename': 'ProgrammingError', 'evalue': str(e),
