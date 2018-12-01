@@ -1,6 +1,6 @@
 from ipykernel.kernelbase import Kernel
 import psycopg2
-from psycopg2 import ProgrammingError, OperationalError
+from psycopg2 import Error, ProgrammingError, OperationalError
 from psycopg2.extensions import (
     QueryCanceledError, POLL_OK, POLL_READ, POLL_WRITE)
 
@@ -172,9 +172,9 @@ Error: Unable to connect to a database at "{}".
         except QueryCanceledError:
             self._conn.rollback()
             return {'status': 'abort', 'execution_count': self.execution_count}
-        except ProgrammingError as e:
+        except Error as e:
             self.send_response(self.iopub_socket, 'stream',
-                               {'name': 'stderr', 'text': str(e)})
+                               {'name': 'stderr', 'text': str(e)})                              
             self._conn.rollback()
             return {'status': 'error', 'execution_count': self.execution_count,
                     'ename': 'ProgrammingError', 'evalue': str(e),
@@ -183,8 +183,17 @@ Error: Unable to connect to a database at "{}".
             self.send_response(
                 self.iopub_socket, 'stream', {
                     'name': 'stdout',
-                    'text': str(len(rows)) + " row(s) returned."
+                    'text': str(len(rows)) + " row(s) returned.\n"
                 })
+
+            for notice in self._conn.notices:
+                self.send_response(
+                    self.iopub_socket, 'stream', {
+                        'name': 'stdout',
+                        'text': str(notice)
+                })
+            self._conn.notices = []
+
             if header is not None and len(rows) > 0:
                 self.send_response(self.iopub_socket, 'display_data', display_data(header, rows))
 
