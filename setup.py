@@ -1,6 +1,5 @@
-from distutils.core import setup
-from distutils.command.install import install
-from distutils import log
+from setuptools import setup
+from setuptools.command.install import install
 import json
 import os
 import sys
@@ -20,7 +19,7 @@ class install_with_kernelspec(install):
 
         # Now write the kernelspec
         from jupyter_client.kernelspec import KernelSpecManager
-        from IPython.utils.tempdir import TemporaryDirectory
+        from tempfile import TemporaryDirectory
         kernel_spec = KernelSpecManager()
         with TemporaryDirectory() as td:
             os.chmod(td, 0o755)  # Starts off as 700, not user readable
@@ -28,8 +27,7 @@ class install_with_kernelspec(install):
                 json.dump(kernel_json, f, sort_keys=True)
             # TODO: Copy resources once they're specified
 
-            log.info('Installing IPython kernel spec')
-            kernel_spec.install_kernel_spec(td, 'postgres', user=self.user, replace=True)
+            kernel_spec.install_kernel_spec(td, 'postgres', user=self.user)
 
 with open('README.rst') as f:
     readme = f.read()
@@ -40,7 +38,7 @@ if svem_flag in sys.argv:
     sys.argv.remove(svem_flag)
 
 setup(name='postgres_kernel',
-      version='0.1',
+      version='0.2',
       description='A PostgreSQL kernel for IPython',
       long_description=readme,
       author='Brian Schiller',
@@ -48,7 +46,7 @@ setup(name='postgres_kernel',
       url='https://github.com/bgschiller/postgres_kernel',
       packages=['postgres_kernel'],
       cmdclass={'install': install_with_kernelspec},
-      install_requires=['psycopg2>=2.6', 'tabulate==0.7.5'],
+      install_requires=['psycopg2>=2.6', 'tabulate>=0.7.5', 'jupyter-client'],
       classifiers=[
           'Framework :: IPython',
           'License :: OSI Approved :: BSD License',
