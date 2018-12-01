@@ -176,15 +176,16 @@ Error: Unable to connect to a database at "{}".
             self.send_response(self.iopub_socket, 'stream',
                                {'name': 'stderr', 'text': str(e)})                              
             self._conn.rollback()
-            return {'status': 'error', 'execution_count': self.execution_count,
-                    'ename': 'ProgrammingError', 'evalue': str(e),
-                    'traceback': []}
+            return {'status': 'abort', 'execution_count': self.execution_count}
+
         else:
-            self.send_response(
-                self.iopub_socket, 'stream', {
-                    'name': 'stdout',
-                    'text': str(len(rows)) + " row(s) returned.\n"
-                })
+
+            if(rows != None):
+                self.send_response(
+                    self.iopub_socket, 'stream', {
+                        'name': 'stdout',
+                        'text': str(len(rows)) + " row(s) returned.\n"
+                    })
 
             for notice in self._conn.notices:
                 self.send_response(
@@ -196,6 +197,8 @@ Error: Unable to connect to a database at "{}".
 
             if header is not None and len(rows) > 0:
                 self.send_response(self.iopub_socket, 'display_data', display_data(header, rows))
+
+            self._conn.commit()
 
         return {'status': 'ok', 'execution_count': self.execution_count,
                 'payload': [], 'user_expressions': {}}
