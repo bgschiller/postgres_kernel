@@ -1,6 +1,7 @@
 # A simple Jupyter kernel for PostgreSQL
 
-Install with `pip install postgres_kernel`
+Install the official version with `pip install postgres_kernel`
+Install from git repo (experimental) with: `pip install git+https://github.com/mhoangvslev/postgres_kernel/`
 
 To use, run one of:
 
