@@ -30,6 +30,8 @@ This is heavily based on [takluyver/bash_kernel](https://github.com/takluyver/ba
 
 ![](images/notebook.png)
 
+## Demonstration:
+- [LoiretPhotographsArchive](https://github.com/mhoangvslev/PhotographiesArchiveSQL)
 
 Related
 -------
