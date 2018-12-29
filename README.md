@@ -31,7 +31,8 @@ This is heavily based on [takluyver/bash_kernel](https://github.com/takluyver/ba
 ![](images/notebook.png)
 
 ## Demonstration:
-- [LoiretPhotographsArchive](https://github.com/mhoangvslev/PhotographiesArchiveSQL)
+- [Loiret Photographs Archive](https://github.com/mhoangvslev/PhotographiesArchiveSQL)
+- [PostgreSQL Basics](https://github.com/mhoangvslev/JupyterPostgreSQLBasics)
 
 Related
 -------
