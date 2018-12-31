@@ -34,6 +34,9 @@ This is heavily based on [takluyver/bash_kernel](https://github.com/takluyver/ba
 - [Loiret Photographs Archive](https://github.com/mhoangvslev/PhotographiesArchiveSQL)
 - [PostgreSQL Basics](https://github.com/mhoangvslev/JupyterPostgreSQLBasics)
 
+## Progress:
+[![Waffle.io - Issues in progress](https://badge.waffle.io/mhoangvslev/postgres_kernel.png?label=in%20progress&title=In%20Progress)](http://waffle.io/mhoangvslev/postgres_kernel)
+
 Related
 -------
 
