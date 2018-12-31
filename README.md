@@ -1,6 +1,8 @@
 # A simple Jupyter kernel for PostgreSQL
 
-Install with `pip install postgres_kernel`
+Install the official version with `pip install postgres_kernel`
+
+Install from git repo (experimental) with: `pip install git+https://github.com/mhoangvslev/postgres_kernel/`
 
 To use, run one of:
 
@@ -28,6 +30,12 @@ This is heavily based on [takluyver/bash_kernel](https://github.com/takluyver/ba
 
 ![](images/notebook.png)
 
+## Demonstration:
+- [Loiret Photographs Archive](https://github.com/mhoangvslev/PhotographiesArchiveSQL)
+- [PostgreSQL Basics](https://github.com/mhoangvslev/JupyterPostgreSQLBasics)
+
+## Progress:
+[![Waffle.io - Issues in progress](https://badge.waffle.io/mhoangvslev/postgres_kernel.png?label=in%20progress&title=In%20Progress)](http://waffle.io/mhoangvslev/postgres_kernel)
 
 Related
 -------
