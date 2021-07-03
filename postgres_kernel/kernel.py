@@ -15,7 +15,7 @@ version_pat = re.compile(r'^PostgreSQL (\d+(\.\d+)+)')
 
 
 def log(val):
-    return # comment out line for debug
+    return  # comment out line for debug
     with open('kernel.log', 'a') as f:
         f.write(str(val) + '\n')
     return val
@@ -57,7 +57,8 @@ class PostgresKernel(Kernel):
         self._conn_string = os.getenv('DATABASE_URL', '')
         self._autocommit = True
         self._conn = None
-        self._start_connection()
+        if self._conn_string:
+            self._start_connection()
 
     @property
     def language_version(self):
@@ -154,8 +155,10 @@ class PostgresKernel(Kernel):
 
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
+        if code.strip() in ['quit', 'quit()', 'exit', 'exit()']:
+            # self.do_shutdown(True)
+            return {'status': 'ok', 'execution_count': self.execution_count, 'payload': [{"source": "ask_exit"}]}
         print(code)
-
         connection_string = self.CONN_STRING_COMMENT.findall(code)
         autocommit_switch = self.AUTOCOMMIT_SWITCH_COMMENT.findall(code)
         if autocommit_switch:
@@ -204,7 +207,7 @@ Error: Unable to connect to a database at "{}".
                     self.iopub_socket, 'stream', {
                         'name': 'stdout',
                         'text': str(notice)
-                })
+                    })
             self._conn.notices = []
 
             if header is not None and len(rows) > 0:
