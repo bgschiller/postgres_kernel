@@ -4,5 +4,6 @@ postgres_kernel.egg-info
 build/
 dist/
 MANIFEST
+*.ipynb_checkpoints*
 
 \.vscode/

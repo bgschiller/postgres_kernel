@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "postgres_kernel"
+dynamic = ["version"]
+dependencies = [
+    'psycopg2>=2.6',
+    'tabulate>=0.7.5',
+    'jupyter-client',
+    'ipykernel'
+]
+
+[project.urls]
+Source = "https://github.com/bgschiller/postgres_kernel"
+
+[tool.hatch.version]
+path = "postgres_kernel/_version.py"
+
+[tool.hatch.build.hooks.custom]
