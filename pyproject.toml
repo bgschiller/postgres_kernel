@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "ipykernel"]
 build-backend = "hatchling.build"
 
 [project]
@@ -18,4 +18,8 @@ Source = "https://github.com/bgschiller/postgres_kernel"
 [tool.hatch.version]
 path = "postgres_kernel/_version.py"
 
+# Used to call hatch_build.py
 [tool.hatch.build.hooks.custom]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"data_kernelspec" = "share/jupyter/kernels/postgres_kernel"
