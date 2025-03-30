@@ -5,12 +5,20 @@ build-backend = "hatchling.build"
 [project]
 name = "postgres_kernel"
 dynamic = ["version"]
+authors = [{name = "Brian Schiller", email = "bgschiller@gmail.com"}]
 dependencies = [
     'psycopg2>=2.6',
     'tabulate>=0.7.5',
     'jupyter-client',
     'ipykernel'
 ]
+classifiers = [
+    'Framework :: IPython',
+    'License :: OSI Approved :: BSD License',
+    'Programming Language :: Python :: 3',
+    'Topic :: System :: Shells',
+]
+readme = "README.md"
 
 [project.urls]
 Source = "https://github.com/bgschiller/postgres_kernel"
