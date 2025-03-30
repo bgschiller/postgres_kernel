@@ -9,7 +9,12 @@ class CustomHook(BuildHookInterface):
     def initialize(self, version, build_data):
         dest = Path(__file__).parent.resolve() / "data_kernelspec"
         overrides = {
-            "argv": make_ipkernel_cmd(mod='postgres_kernel')
+            "argv": make_ipkernel_cmd(
+                executable="python", mod='postgres_kernel'
+            ),
+            "display_name": "PosgreSQL",
+            "language": "sql",
+            "codemirror_mode": "sql"
         }
 
         if dest.exists():
