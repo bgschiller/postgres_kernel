@@ -9,7 +9,7 @@ import re
 import os
 from select import select
 
-from .version import __version__
+from ._version import __version__
 from tabulate import tabulate
 version_pat = re.compile(r'^PostgreSQL (\d+(\.\d+)+)')
 
